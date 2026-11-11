@@ -19,8 +19,13 @@ class SupabaseLeaderboard {
     const envUrl = (window.ENV && window.ENV.SUPABASE_URL) ? window.ENV.SUPABASE_URL.trim() : '';
     const envKey = (window.ENV && window.ENV.SUPABASE_ANON_KEY) ? window.ENV.SUPABASE_ANON_KEY.trim() : '';
 
-    this.supabaseUrl = envUrl || localStorage.getItem('supabase_url') || '';
+    this.supabaseUrl = this.cleanUrl(envUrl || localStorage.getItem('supabase_url') || '');
     this.supabaseKey = envKey || localStorage.getItem('supabase_key') || '';
+
+    // If localStorage had a URL with /rest/v1 suffix, update with the clean base URL
+    if (this.supabaseUrl) {
+      localStorage.setItem('supabase_url', this.supabaseUrl);
+    }
 
     // Local storage fallback key
     this.localKey = 'pixel_survivor_local_highscores';
@@ -29,6 +34,17 @@ class SupabaseLeaderboard {
     if (!this.supabaseUrl || !this.supabaseKey) {
       this.loadFromEnvFile();
     }
+  }
+
+  /**
+   * Normalize and sanitize Supabase base URL (strips accidental /rest/v1 or trailing slashes)
+   */
+  cleanUrl(url) {
+    if (!url) return '';
+    let cleaned = url.trim();
+    cleaned = cleaned.replace(/\/rest\/v1\/?$/i, '');
+    cleaned = cleaned.replace(/\/+$/, '');
+    return cleaned;
   }
 
   /**
@@ -57,7 +73,7 @@ class SupabaseLeaderboard {
       });
 
       if (foundUrl && foundKey) {
-        this.supabaseUrl = foundUrl;
+        this.supabaseUrl = this.cleanUrl(foundUrl);
         this.supabaseKey = foundKey;
         this.init(this.onRealtimeUpdate);
       }
@@ -119,7 +135,7 @@ class SupabaseLeaderboard {
    * Test connection to Supabase and verify 'highscores' table
    */
   async testConnection(url, key) {
-    const testUrl = (url || this.supabaseUrl || '').trim();
+    const testUrl = this.cleanUrl(url || this.supabaseUrl || '');
     const testKey = (key || this.supabaseKey || '').trim();
 
     if (!testUrl || !testKey) {
@@ -167,7 +183,7 @@ class SupabaseLeaderboard {
    * Update and save Supabase credentials with active validation
    */
   async configure(url, key) {
-    this.supabaseUrl = (url || '').trim();
+    this.supabaseUrl = this.cleanUrl(url);
     this.supabaseKey = (key || '').trim();
 
     localStorage.setItem('supabase_url', this.supabaseUrl);
