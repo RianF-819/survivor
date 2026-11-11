@@ -178,7 +178,11 @@ class Game3D {
 
     // 4. Window Resize Event
     window.addEventListener('resize', () => this.handleResize());
-    window.addEventListener('orientationchange', () => setTimeout(() => this.handleResize(), 200));
+    window.addEventListener('orientationchange', () => {
+      this.handleResize();
+      setTimeout(() => this.handleResize(), 150);
+      setTimeout(() => this.handleResize(), 350);
+    });
 
     // 5. Start Game Loop
     this.lastTime = performance.now();
@@ -233,10 +237,26 @@ class Game3D {
     if (!this.renderer || !this.camera) return;
     const w = window.innerWidth;
     const h = window.innerHeight;
-    this.camera.aspect = w / h;
+    const aspect = w / h;
+    this.camera.aspect = aspect;
+
+    // Responsive FOV: Expand vertical FOV in portrait orientation (aspect < 1.0)
+    // so horizontal visibility across the 3D battle arena stays comfortable and wide
+    if (aspect < 1.0) {
+      const baseFovRad = (48 * Math.PI) / 180;
+      const targetFovRad = 2 * Math.atan(Math.tan(baseFovRad * 0.5) / Math.max(0.45, aspect));
+      this.camera.fov = Math.min(84, (targetFovRad * 180) / Math.PI);
+    } else {
+      this.camera.fov = 48;
+    }
+
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+    if (window.inputController) {
+      window.inputController.resetJoystick();
+    }
   }
 
   startNewGame() {
@@ -298,9 +318,12 @@ class Game3D {
     if (this.player && this.camera) {
       const targetX = this.player.x;
       const targetZ = this.player.z;
+      const isPortrait = window.innerHeight > window.innerWidth;
+      const camDistY = isPortrait ? 30 : 25;
+      const camDistZ = isPortrait ? 22 : 19;
       this.camera.position.x += (targetX - this.camera.position.x) * 0.12;
-      this.camera.position.z += ((targetZ + 19) - this.camera.position.z) * 0.12;
-      this.camera.position.y = 25;
+      this.camera.position.z += ((targetZ + camDistZ) - this.camera.position.z) * 0.12;
+      this.camera.position.y += (camDistY - this.camera.position.y) * 0.12;
       this.camera.lookAt(this.player.x, 0.8, this.player.z);
     }
 
@@ -432,9 +455,30 @@ class Game3D {
 
     const pX = this.player.x;
     const pZ = this.player.z;
-    const facing = this.player.facingAngle;
+    let facing = this.player.facingAngle;
     const range = this.player.attackRange;
     const arc = this.player.attackArc;
+
+    // Mobile / Touch Smart Auto-Aim: If nearby enemy is in attack range, snap slash direction towards closest threat
+    const isTouch = window.inputController && window.inputController.mode === 'touch';
+    if (isTouch || (window.inputController && !window.inputController.mouseAimActive)) {
+      let nearestEnemy = null;
+      let minEnemyDist = range * 1.35;
+      for (let i = 0; i < this.enemies.length; i++) {
+        const e = this.enemies[i];
+        if (e.dead) continue;
+        const dist = Math.hypot(e.x - pX, e.z - pZ);
+        if (dist <= minEnemyDist) {
+          minEnemyDist = dist;
+          nearestEnemy = e;
+        }
+      }
+      if (nearestEnemy) {
+        facing = Math.atan2(nearestEnemy.z - pZ, nearestEnemy.x - pX);
+        this.player.facingAngle = facing;
+        this.player.mesh.rotation.y = -facing + Math.PI / 2;
+      }
+    }
 
     // 3D Animated Slash Arc Mesh
     this.slashes.push(new window.Entities3D.Slash3D(this.scene, pX, pZ, facing, range, arc));

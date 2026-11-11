@@ -1039,3 +1039,342 @@ body.mode-touch #game-container {
     margin-top: -32px;
   }
 }
+
+/* ==========================================================================
+   Mobile Phone Responsive Optimizations (Landscape & Portrait)
+   ========================================================================== */
+
+/* 1. Mobile Portrait Mode (Phone held upright) */
+@media (max-width: 680px) and (orientation: portrait), (max-aspect-ratio: 1/1) and (max-width: 680px) {
+  #hud {
+    padding: max(8px, env(safe-area-inset-top, 8px)) 8px 4px 8px;
+    gap: 4px;
+  }
+
+  .hud-player-stats {
+    min-width: 110px;
+    padding: 4px 8px;
+    gap: 3px;
+    border-radius: 6px;
+  }
+
+  .hud-stat-row {
+    font-size: 10px;
+  }
+
+  #hud-level {
+    font-size: 11px;
+  }
+
+  #hud-hp-text {
+    font-size: 9px;
+  }
+
+  .hud-bar-bg {
+    height: 7px;
+  }
+
+  .hud-center-stats {
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+
+  .hud-timer {
+    font-size: 16px;
+    letter-spacing: 1px;
+  }
+
+  .hud-sub-stats {
+    font-size: 9px;
+    gap: 6px;
+  }
+
+  .hud-group {
+    gap: 5px;
+  }
+
+  .hud-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+
+  /* Portrait Touch Controls */
+  #joystick-zone {
+    width: 50%;
+    height: 50%;
+    bottom: 0;
+    left: 0;
+  }
+
+  #joystick-base {
+    width: 110px;
+    height: 110px;
+    margin-left: -55px;
+    margin-top: -55px;
+    bottom: max(60px, calc(env(safe-area-inset-bottom, 0px) + 50px));
+    left: max(60px, calc(env(safe-area-inset-left, 0px) + 50px));
+  }
+
+  #joystick-stick {
+    width: 48px;
+    height: 48px;
+    margin-left: -24px;
+    margin-top: -24px;
+  }
+
+  #action-zone {
+    bottom: max(16px, env(safe-area-inset-bottom, 16px));
+    right: max(14px, env(safe-area-inset-right, 14px));
+    gap: 12px;
+  }
+
+  .action-row {
+    gap: 12px;
+  }
+
+  #btn-attack {
+    width: 80px;
+    height: 80px;
+    font-size: 28px;
+  }
+
+  #btn-dash {
+    width: 58px;
+    height: 58px;
+    font-size: 20px;
+  }
+
+  #btn-auto-attack {
+    padding: 4px 10px;
+    font-size: 10px;
+  }
+
+  /* Portrait Boss & Combo HUD */
+  #boss-hud-bar-container {
+    top: 62px;
+    width: 92%;
+    padding: 4px 10px;
+  }
+
+  .boss-hud-title {
+    font-size: 10px;
+  }
+
+  #boss-banner {
+    top: 60px;
+    font-size: 12px;
+    padding: 6px 16px;
+    letter-spacing: 1.5px;
+  }
+
+  #combo-display {
+    top: 100px;
+    right: 14px;
+  }
+
+  #combo-count {
+    font-size: 22px;
+  }
+
+  /* Portrait Modals */
+  .modal-box {
+    max-width: 94vw;
+    max-height: 88vh;
+    padding: 18px 14px;
+    gap: 12px;
+    border-radius: 10px;
+  }
+
+  .modal-title {
+    font-size: 18px;
+  }
+
+  .modal-desc {
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .settings-section {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .btn-primary, .btn-secondary {
+    padding: 10px 14px;
+    font-size: 12px;
+  }
+}
+
+/* 2. Mobile Landscape Mode (Phone held horizontally, short height <= 520px) */
+@media (max-height: 520px) and (orientation: landscape) {
+  #hud {
+    padding: max(4px, env(safe-area-inset-top, 4px)) max(12px, env(safe-area-inset-right, 12px)) 2px max(12px, env(safe-area-inset-left, 12px));
+    align-items: center;
+  }
+
+  .hud-player-stats {
+    min-width: 140px;
+    padding: 3px 8px;
+    gap: 2px;
+    border-radius: 6px;
+  }
+
+  .hud-stat-row {
+    font-size: 10px;
+  }
+
+  #hud-level {
+    font-size: 10px;
+  }
+
+  #hud-hp-text {
+    font-size: 9px;
+  }
+
+  .hud-bar-bg {
+    height: 6px;
+  }
+
+  .hud-center-stats {
+    padding: 2px 12px;
+    border-radius: 6px;
+  }
+
+  .hud-timer {
+    font-size: 15px;
+    letter-spacing: 1px;
+  }
+
+  .hud-sub-stats {
+    font-size: 9px;
+    gap: 8px;
+  }
+
+  .hud-group {
+    gap: 6px;
+  }
+
+  .hud-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+    border-radius: 6px;
+  }
+
+  /* Landscape Touch Controls */
+  #joystick-zone {
+    width: 45%;
+    height: 75%;
+    bottom: 0;
+    left: 0;
+  }
+
+  #joystick-base {
+    width: 100px;
+    height: 100px;
+    margin-left: -50px;
+    margin-top: -50px;
+    bottom: max(50px, calc(env(safe-area-inset-bottom, 0px) + 38px));
+    left: max(55px, calc(env(safe-area-inset-left, 0px) + 42px));
+  }
+
+  #joystick-stick {
+    width: 44px;
+    height: 44px;
+    margin-left: -22px;
+    margin-top: -22px;
+  }
+
+  #action-zone {
+    bottom: max(10px, env(safe-area-inset-bottom, 10px));
+    right: max(16px, env(safe-area-inset-right, 16px));
+    gap: 8px;
+  }
+
+  .action-row {
+    gap: 10px;
+  }
+
+  #btn-attack {
+    width: 68px;
+    height: 68px;
+    font-size: 24px;
+  }
+
+  #btn-dash {
+    width: 50px;
+    height: 50px;
+    font-size: 18px;
+  }
+
+  #btn-auto-attack {
+    padding: 3px 8px;
+    font-size: 9px;
+  }
+
+  /* Landscape Boss & Combo HUD */
+  #boss-hud-bar-container {
+    top: 42px;
+    width: 50%;
+    padding: 3px 8px;
+  }
+
+  .boss-hud-title {
+    font-size: 9px;
+  }
+
+  #boss-banner {
+    top: 42px;
+    font-size: 11px;
+    padding: 4px 14px;
+    letter-spacing: 1px;
+  }
+
+  #combo-display {
+    top: 45px;
+    right: max(14px, env(safe-area-inset-right, 14px));
+  }
+
+  #combo-count {
+    font-size: 20px;
+  }
+
+  /* Landscape Modals - Compact scrollable view */
+  .modal-overlay {
+    padding: 8px;
+  }
+
+  .modal-box {
+    max-width: 560px;
+    max-height: 94vh;
+    padding: 10px 16px;
+    gap: 8px;
+    border-radius: 8px;
+  }
+
+  .modal-title {
+    font-size: 16px;
+  }
+
+  .modal-desc {
+    font-size: 10px;
+    line-height: 1.3;
+  }
+
+  .settings-section {
+    padding: 6px 10px;
+    gap: 6px;
+    margin-bottom: 2px;
+  }
+
+  .setting-row {
+    font-size: 11px;
+  }
+
+  .btn-primary, .btn-secondary {
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+}

@@ -75,24 +75,24 @@ class InputController {
    * Auto-detect PC vs Touch Device & set appropriate UI layout
    */
   setupPlatformAutoDetect() {
-    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
     this.setControlMode(isTouch ? 'touch' : 'pc');
 
-    // If mouse moves, switch smoothly to PC mode
-    window.addEventListener('mousemove', () => {
-      if (this.mode !== 'pc') {
+    // Only switch mode on genuine pointer type to prevent mobile simulated mouse events from hiding touch controls
+    window.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && this.mode !== 'pc') {
         this.setControlMode('pc');
+      } else if ((e.pointerType === 'touch' || e.pointerType === 'pen') && this.mode !== 'touch') {
+        this.setControlMode('touch');
       }
-    }, { once: true });
+    });
 
-    // If touch begins on joystick zone, switch to touch mode
-    if (this.joystickZone) {
-      this.joystickZone.addEventListener('touchstart', () => {
-        if (this.mode !== 'touch') {
-          this.setControlMode('touch');
-        }
-      }, { passive: true });
-    }
+    // Touch gesture anywhere switches to touch mode
+    window.addEventListener('touchstart', () => {
+      if (this.mode !== 'touch') {
+        this.setControlMode('touch');
+      }
+    }, { passive: true });
   }
 
   setControlMode(mode) {
@@ -405,6 +405,8 @@ class InputController {
     }
     if (this.joystickBase) {
       this.joystickBase.classList.remove('active');
+      this.joystickBase.style.left = '';
+      this.joystickBase.style.top = '';
     }
   }
 
