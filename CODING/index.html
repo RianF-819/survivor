@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0d14">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Pixel Survivor 3D - Cyberpunk Arena Survival</title>
+
+  <!-- Google Fonts: Space Grotesk / Chakra Petch -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700;900&display=swap" rel="stylesheet">
+
+  <!-- Three.js CDN for 3D WebGL Graphics -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- Supabase JS Client v2 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- 3D WebGL Canvas Container -->
+  <div id="game-container"></div>
+
+  <!-- HUD Overlay -->
+  <header id="hud" role="region" aria-label="Game HUD">
+    <!-- Left: Health, Level, EXP -->
+    <div class="hud-group">
+      <div class="hud-player-stats">
+        <div class="hud-stat-row">
+          <span id="hud-level" class="hud-badge">LV 1</span>
+          <span id="hud-hp-text">100 / 100</span>
+        </div>
+        <div class="hud-bar-bg">
+          <div id="hud-hp-bar" class="hud-bar-fill"></div>
+        </div>
+        <div class="hud-bar-bg" style="height: 5px; margin-top: 2px;">
+          <div id="hud-exp-bar" class="hud-bar-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: Survival Timer & Wave Stats -->
+    <div class="hud-center-stats">
+      <div id="hud-time" class="hud-timer">00:00</div>
+      <div class="hud-sub-stats">
+        <span>KILLS: <strong id="hud-kills">0</strong></span>
+        <span>SCORE: <strong id="hud-score">0</strong></span>
+      </div>
+    </div>
+
+    <!-- Right: Quick Action Buttons -->
+    <div class="hud-group">
+      <button id="btn-toggle-control-mode" class="hud-btn" title="Toggle PC / Touch Controls" aria-label="Toggle Controls">🎮</button>
+      <button id="btn-fullscreen" class="hud-btn" title="Toggle Fullscreen" aria-label="Toggle Fullscreen">⛶</button>
+      <button id="btn-open-settings" class="hud-btn" title="Audio & IEM Settings" aria-label="Settings">⚙️</button>
+      <button id="btn-open-leaderboard" class="hud-btn" title="Global Leaderboard" aria-label="Leaderboard">🏆</button>
+    </div>
+  </header>
+
+  <!-- Boss Wave Alert Banner & Live Boss HP Bar -->
+  <div id="boss-banner">⚠️ WARNING: CYBER BOSS APPROACHING! ⚠️</div>
+
+  <div id="boss-hud-bar-container">
+    <div class="boss-hud-title">CYBER TITAN [MK.IV]</div>
+    <div class="boss-hud-bar-bg">
+      <div id="boss-hud-bar-fill"></div>
+    </div>
+  </div>
+
+  <!-- Dynamic Combo Multiplier HUD -->
+  <div id="combo-display">
+    <span id="combo-count">0x</span>
+    <span class="combo-label">COMBO!</span>
+  </div>
+
+  <!-- Floating Damage Texts Container (Overlaid on 3D view) -->
+  <div id="damage-container"></div>
+
+  <!-- Dedicated PC Cursor Crosshair -->
+  <div id="custom-crosshair" aria-hidden="true"></div>
+
+  <!-- PC Controls Bottom Bar -->
+  <div id="pc-controls-bar" role="region" aria-label="PC Controls Guide">
+    <span class="pc-key-hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move</span>
+    <span class="pc-key-hint"><kbd>L-Click</kbd> Slash</span>
+    <span class="pc-key-hint"><kbd>R-Click</kbd> / <kbd>Shift</kbd> Dash</span>
+    <span class="pc-key-hint"><kbd>E</kbd> Auto [<strong id="pc-auto-status" style="color: var(--neon-cyan);">OFF</strong>]</span>
+    <span class="pc-key-hint"><kbd>Tab</kbd> Ranks</span>
+    <span class="pc-key-hint"><kbd>Esc</kbd> Config</span>
+  </div>
+
+  <!-- Touch Controls Overlay (Virtual Joystick & Action Buttons) -->
+  <div id="touch-controls" role="region" aria-label="Touch Controls">
+    <!-- Left Touch Zone for Virtual Joystick -->
+    <div id="joystick-zone">
+      <div id="joystick-base">
+        <div id="joystick-stick"></div>
+      </div>
+    </div>
+
+    <!-- Right Action Zone -->
+    <div id="action-zone">
+      <button id="btn-auto-attack" aria-pressed="false">AUTO-ATTACK: OFF</button>
+      <div class="action-row">
+        <!-- Dash / Dodge Button -->
+        <button id="btn-dash" class="touch-btn" aria-label="Dash">
+          <div id="btn-dash-cd"></div>
+          <span>⚡</span>
+          <span class="btn-label">DASH</span>
+        </button>
+
+        <!-- Main Attack / Slash Button -->
+        <button id="btn-attack" class="touch-btn" aria-label="Attack">
+          <span>⚔️</span>
+          <span class="btn-label">ATTACK</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- START GAME MODAL -->
+  <div id="start-modal" class="modal-overlay active">
+    <div class="modal-box">
+      <h1 class="modal-title">⚔️ PIXEL SURVIVOR 3D</h1>
+      <p class="modal-desc">
+        Survive endless swarms of cybernetic mutants in a 3D isometric arena! Collect EXP gems, evolve your plasma weaponry, and vanquish the Cyber Boss.
+      </p>
+
+      <div class="settings-section">
+        <div class="settings-section-title">
+          <span>🎮 PLAYER & ROOM SETUP</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div>
+            <label for="start-player-name" style="font-size: 11px; font-weight: bold; color: var(--neon-cyan); display: block; margin-bottom: 3px;">
+              PLAYER NAME:
+            </label>
+            <input type="text" id="start-player-name" class="form-input" maxlength="16" placeholder="Enter Callsign (e.g. CyberKnight)">
+          </div>
+          <div>
+            <label for="start-room-code" style="font-size: 11px; font-weight: bold; color: var(--neon-cyan); display: block; margin-bottom: 3px;">
+              ROOM CODE (PRIVATE LEADERBOARD):
+            </label>
+            <input type="text" id="start-room-code" class="form-input" maxlength="16" placeholder="e.g. ROOM101, SQUAD_A" style="text-transform: uppercase;">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">
+          <span>🕹️ CONTROLS GUIDE</span>
+        </div>
+        <div style="font-size: 12px; line-height: 1.6; color: #cbd5e1;">
+          • <strong>Tablet / Touch</strong>: Virtual Joystick on the left & Attack / Dash buttons on the right.<br>
+          • <strong>Desktop / Keyboard</strong>: WASD or Arrow keys to move, Space or Left Click to attack, Shift for dash.<br>
+          • <strong>IEM Audio</strong>: Engineered with Equal-Power IEM Channel Balancing to fix left bias on wired in-ear monitors.
+        </div>
+      </div>
+
+      <button id="btn-start-game" class="btn-primary">▶ START SURVIVAL</button>
+
+      <div style="display: flex; gap: 10px;">
+        <button id="btn-open-supabase-config" class="btn-secondary" style="flex: 1;">☁️ Supabase Cloud</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEVEL UP MODAL -->
+  <div id="levelup-modal" class="modal-overlay">
+    <div class="modal-box">
+      <h2 class="modal-title">✨ LEVEL UP!</h2>
+      <p class="modal-desc">Select an augment module to upgrade your survivor:</p>
+      <div id="upgrade-cards">
+        <!-- Dynamic upgrade cards injected by game.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME OVER MODAL -->
+  <div id="gameover-modal" class="modal-overlay">
+    <div class="modal-box">
+      <h2 class="modal-title" style="color: var(--neon-red);">☠️ GAME OVER</h2>
+      <p class="modal-desc">Your shields collapsed under the relentless cyber swarm.</p>
+
+      <div class="settings-section">
+        <div class="setting-row">
+          <span>Survival Time:</span>
+          <strong id="go-final-time" style="color: var(--neon-cyan);">00:00</strong>
+        </div>
+        <div class="setting-row">
+          <span>Enemies Slain:</span>
+          <strong id="go-final-kills" style="color: var(--neon-yellow);">0</strong>
+        </div>
+        <div class="setting-row">
+          <span>Final Score:</span>
+          <strong id="go-final-score" style="color: #fff; font-size: 18px;">0</strong>
+        </div>
+      </div>
+
+      <!-- Supabase Highscore Submission Form -->
+      <div class="settings-section">
+        <label for="player-name-input" style="font-size: 11px; font-weight: bold; color: var(--neon-cyan); display: block; margin-bottom: 2px;">
+          PLAYER NAME:
+        </label>
+        <input type="text" id="player-name-input" class="form-input" maxlength="16" placeholder="Enter your callsign">
+
+        <label for="gameover-room-code" style="font-size: 11px; font-weight: bold; color: var(--neon-cyan); display: block; margin-top: 8px; margin-bottom: 2px;">
+          ROOM CODE (PRIVATE LEADERBOARD):
+        </label>
+        <input type="text" id="gameover-room-code" class="form-input" maxlength="16" placeholder="e.g. ROOM101" style="text-transform: uppercase;">
+
+        <div id="go-submit-status" class="status-msg"></div>
+        <button id="btn-submit-score" class="btn-primary" style="margin-top: 8px;">SUBMIT SCORE</button>
+      </div>
+
+      <button id="btn-restart" class="btn-secondary" style="padding: 12px;">🔄 PLAY AGAIN</button>
+    </div>
+  </div>
+
+  <!-- REALTIME LEADERBOARD MODAL -->
+  <div id="leaderboard-modal" class="modal-overlay">
+    <div class="modal-box">
+      <h2 class="modal-title">🏆 PRIVATE LEADERBOARD</h2>
+      <div id="lb-connection-status" class="status-badge connected">● Supabase Realtime Connected</div>
+
+      <!-- Private Room Filter -->
+      <div class="lb-room-filter">
+        <span style="font-size: 11px; font-weight: bold; color: var(--neon-cyan);">ROOM:</span>
+        <input type="text" id="lb-room-filter-input" class="form-input" style="flex: 1; padding: 6px 10px; font-size: 12px; text-transform: uppercase;" placeholder="ENTER ROOM CODE">
+        <button id="btn-lb-filter" class="btn-secondary" style="padding: 6px 12px; font-size: 11px;">FILTER</button>
+      </div>
+      
+      <div id="leaderboard-list">
+        <!-- Dynamic leaderboard rows injected by main.js -->
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 6px;">
+        <button id="btn-refresh-lb" class="btn-secondary" style="flex: 1;">🔄 Refresh</button>
+        <button id="btn-lb-restart" class="btn-primary" style="flex: 1.3;">▶ PLAY AGAIN</button>
+        <button id="btn-close-lb" class="btn-secondary" style="flex: 1;">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS & IEM STEREO CALIBRATION MODAL -->
+  <div id="settings-modal" class="modal-overlay">
+    <div class="modal-box">
+      <h2 class="modal-title">⚙️ AUDIO & IEM CALIBRATION</h2>
+      
+      <!-- Audio Volumes -->
+      <div class="settings-section">
+        <div class="settings-section-title">VOLUME CHANNELS</div>
+        <div class="setting-row">
+          <span>Master:</span>
+          <input type="range" id="vol-master" min="0" max="1" step="0.05" value="0.8">
+        </div>
+        <div class="setting-row">
+          <span>BGM:</span>
+          <input type="range" id="vol-bgm" min="0" max="1" step="0.05" value="0.65">
+        </div>
+        <div class="setting-row">
+          <span>SFX:</span>
+          <input type="range" id="vol-sfx" min="0" max="1" step="0.05" value="0.75">
+        </div>
+      </div>
+
+      <!-- Precision IEM Stereo Channel Balancing -->
+      <div class="settings-section">
+        <div class="settings-section-title">
+          <span>🎧 IEM STEREO BALANCING</span>
+        </div>
+        <div class="iem-hint">
+          Micro-calibrated Equal-Power compensation to fix left-channel bias common in wired In-Ear Monitors and USB-C DAC dongles without clipping.
+        </div>
+
+        <div class="balance-slider-container">
+          <div class="setting-row">
+            <span>Balance Offset:</span>
+            <strong id="iem-balance-val" style="color: var(--neon-cyan);">0.00 (Dead Center)</strong>
+          </div>
+          <input type="range" id="iem-balance-slider" min="-1.0" max="1.0" step="0.01" value="0.0">
+          <div class="balance-markers">
+            <span>◄ Left (-1.0)</span>
+            <span>Center (0.0)</span>
+            <span>Right (+1.0) ►</span>
+          </div>
+
+          <div class="balance-tools">
+            <button id="btn-nudge-left" class="btn-secondary">-0.05 L</button>
+            <button id="btn-reset-balance" class="btn-secondary">Reset 0.00</button>
+            <button id="btn-nudge-right" class="btn-secondary">+0.05 R</button>
+          </div>
+        </div>
+
+        <!-- Live Stereo VU Meter Visualizer -->
+        <div class="stereo-meter-box">
+          <div class="meter-label">
+            <span>CHANNEL L (LEFT)</span>
+            <span id="meter-val-l">0%</span>
+          </div>
+          <div class="meter-track"><div id="meter-fill-l" class="meter-fill"></div></div>
+
+          <div class="meter-label" style="margin-top: 6px;">
+            <span>CHANNEL R (RIGHT)</span>
+            <span id="meter-val-r">0%</span>
+          </div>
+          <div class="meter-track"><div id="meter-fill-r" class="meter-fill"></div></div>
+        </div>
+
+        <!-- Calibration Tools -->
+        <div class="balance-tools" style="margin-top: 8px;">
+          <button id="btn-test-center-noise" class="btn-secondary" title="Play correlated center pink noise">
+            🔊 Test Phantom Center
+          </button>
+          <button id="btn-test-ping-sequence" class="btn-secondary" title="Ping Left -> Center -> Right">
+            🔔 Ping L - Center - R
+          </button>
+        </div>
+      </div>
+
+      <!-- BGM Mode & FLAC File Loader -->
+      <div class="settings-section">
+        <div class="settings-section-title">BGM (HOUSE / ELECTRONIC)</div>
+        <div class="setting-row">
+          <span>Audio Source:</span>
+          <select id="bgm-mode-select" class="form-input" style="width: auto; padding: 4px 8px;">
+            <option value="synth">Procedural Web Audio Synth (124 BPM House)</option>
+            <option value="flac">FLAC Audio Stream</option>
+          </select>
+        </div>
+
+        <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
+          Load your own custom FLAC house / electro track:
+        </div>
+        <input type="file" id="flac-file-input" accept=".flac,audio/flac" class="form-input" style="font-size: 11px;">
+        <div id="flac-upload-status" class="status-msg"></div>
+      </div>
+
+      <button id="btn-close-settings" class="btn-primary">SAVE & CLOSE</button>
+    </div>
+  </div>
+
+  <!-- SUPABASE CONFIGURATION MODAL -->
+  <div id="supabase-config-modal" class="modal-overlay">
+    <div class="modal-box">
+      <h2 class="modal-title">☁️ SUPABASE CONFIGURATION</h2>
+      <p class="modal-desc">
+        Connect your Supabase project to enable global leaderboards and real-time multiplayer score tracking.
+      </p>
+
+      <div class="settings-section">
+        <label for="supa-url-input" style="font-size: 12px; font-weight: bold; color: var(--neon-cyan);">SUPABASE URL:</label>
+        <input type="text" id="supa-url-input" class="form-input" placeholder="https://xyzproject.supabase.co">
+
+        <label for="supa-key-input" style="font-size: 12px; font-weight: bold; color: var(--neon-cyan); margin-top: 8px;">SUPABASE ANON KEY:</label>
+        <input type="password" id="supa-key-input" class="form-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+
+        <div id="supa-config-status" class="status-msg" style="margin-top: 6px;"></div>
+      </div>
+
+      <div class="settings-section" style="font-size: 11px; color: #94a3b8; line-height: 1.5;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <strong style="color: #fff;">Required Supabase SQL Setup:</strong>
+          <button id="btn-copy-sql" class="btn-secondary" style="padding: 3px 8px; font-size: 10px;">📋 Copy SQL</button>
+        </div>
+        <pre id="supabase-sql-code" style="background: rgba(0,0,0,0.6); border: 1px solid rgba(0, 245, 255, 0.2); padding: 8px; border-radius: 4px; overflow-x: auto; color: #38bdf8; font-size: 10px; margin: 0; white-space: pre-wrap; font-family: monospace;">CREATE TABLE IF NOT EXISTS highscores (
+  id BIGSERIAL PRIMARY KEY,
+  nama TEXT NOT NULL,
+  skor_tertinggi INTEGER NOT NULL,
+  room_code TEXT NOT NULL DEFAULT 'GLOBAL',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE highscores ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public Read Highscores" 
+ON highscores FOR SELECT TO anon USING (true);
+
+CREATE POLICY "Public Insert Highscores" 
+ON highscores FOR INSERT TO anon WITH CHECK (true);
+
+ALTER PUBLICATION supabase_realtime ADD TABLE highscores;
+CREATE INDEX IF NOT EXISTS idx_room_code ON highscores(room_code);</pre>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button id="btn-save-supa" class="btn-primary" style="flex: 1;">SAVE & CONNECT</button>
+        <button id="btn-close-supa-config" class="btn-secondary" style="flex: 1;">CANCEL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script src="js/env.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/joystick.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
